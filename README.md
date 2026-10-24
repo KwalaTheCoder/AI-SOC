@@ -1,61 +1,58 @@
-# AI S.O.C
+# AI S.O.C — Security Operations Demo
 
-AI S.O.C is a local-first security operations demo built with Python and Flask. It brings together log and network-flow parsing, lightweight detections, an investigation dashboard, and optional local AI assistance.
+A local-first security operations demo built with Python and Flask. It brings log and network-flow parsing, lightweight detections, an investigation dashboard, and optional local AI assistance into one project.
 
-## What it includes
+## Highlights
 
-- Parsers for Syslog, CEF, LEEF, Suricata, Windows event logs, firewall XML, NetFlow, sFlow, and PCAP input.
-- Event normalization, asset context, threat-feed lookups, and heuristic checks for suspicious activity.
-- Optional Splunk event streaming, configured with environment variables.
-- Local Ollama analysis and MITRE ATT&CK retrieval using ChromaDB.
-- A MITRE ATT&CK relationship graph, an offline CVE store, and semantic incident memory.
-- A Flask API and browser dashboard, with local SQLite storage.
+- Parse Syslog, CEF, LEEF, Suricata, Windows event logs, firewall XML, NetFlow, sFlow, and PCAP input.
+- Normalize events and add asset and threat-feed context.
+- Inspect suspicious activity with heuristic detections and an incident dashboard.
+- Connect to Splunk for optional event streaming.
+- Use local Ollama models with MITRE ATT&CK retrieval and incident memory.
+- Explore MITRE ATT&CK relationships and query a local CVE store.
+- Store events and investigations locally with SQLite.
 
-This project is a demonstration and research tool. Detection results need analyst review; do not rely on it as the only control in a production SOC. Review the network exposure and authentication settings before connecting it to real systems.
+## Tech stack
 
-## Requirements
+- Python 3.10+
+- Flask and Flask-CORS
+- SQLite and ChromaDB
+- NetworkX
+- Optional: Ollama and Splunk SDK
 
-- Python 3.10 or newer
-- Ollama for local language-model and embedding features
-- Splunk credentials only if you enable the optional Splunk stream
+## Quick start
 
-Install the Python dependencies:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-On Windows PowerShell, activate the environment with:
+### Windows PowerShell
 
 ```powershell
-.venv\Scripts\Activate.ps1
-```
-
-## Configuration
-
-Copy `.env.example` to `.env` and edit the local copy. The example contains placeholders and local defaults only.
-
-```bash
-cp .env.example .env
-```
-
-Keep Splunk usernames, passwords, session tokens, and `SOC_API_TOKEN` in `.env` or another local secret manager. Never commit `.env`. The server binds to `127.0.0.1` by default. Set a strong `SOC_API_TOKEN` before exposing the API beyond the local machine.
-
-Splunk streaming is optional. Set `SPLUNK_HOST`, `SPLUNK_PORT`, and either `SPLUNK_SESSION_TOKEN` or `SPLUNK_USERNAME` plus `SPLUNK_PASSWORD` in your local `.env`.
-
-## Run
-
-Start the web application:
-
-```bash
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 python soc_server.py
 ```
 
-Open `http://127.0.0.1:5000` in your browser. Optional listeners and the Splunk stream should be enabled only in an authorized lab or environment.
+Open `http://127.0.0.1:5000`.
 
-Build the local MITRE knowledge base when using retrieval features:
+### macOS or Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
+python soc_server.py
+```
+
+The app binds to `127.0.0.1` by default. The dashboard can run without Splunk; the Splunk stream and Ollama-backed analysis are optional integrations.
+
+## Configure integrations
+
+Edit your local `.env` file. Keep usernames, passwords, session tokens, and API tokens out of tracked files.
+
+For Splunk streaming, configure `SPLUNK_HOST`, `SPLUNK_PORT`, and either `SPLUNK_SESSION_TOKEN` or `SPLUNK_USERNAME` plus `SPLUNK_PASSWORD`. Leave these empty when Splunk is not in use.
+
+For local AI and retrieval, run Ollama and use the model names in `.env.example`. Build the local MITRE index with:
 
 ```bash
 ollama pull nomic-embed-text:latest
@@ -64,16 +61,7 @@ python phase2_cli.py build-graph
 python phase2_cli.py status
 ```
 
-Example CLI commands:
-
-```bash
-python phase2_cli.py search-mitre "multiple failed login attempts"
-python phase2_cli.py graph-query T1001 --depth 2
-python phase2_cli.py import-cve /path/to/nvdcve-feed.json
-python phase2_cli.py search-cve nginx --min-cvss 7
-```
-
-Generated databases and vector indexes are stored locally under `data/` and are excluded from version control. Rebuild them from the included source data and your own authorized inputs.
+If you enable `SOC_API_TOKEN`, enter the same value in the dashboard browser's local storage under `soc_api_token`. Keep the server bound to localhost unless you have added and tested appropriate network access controls.
 
 ## Tests
 
@@ -82,9 +70,17 @@ python -m unittest -v test_phase2.py test_security_and_detection.py
 python acceptance_phase2.py
 ```
 
-## Security notes
+## Project structure
 
-- Use only systems, logs, packet captures, and threat feeds that you are authorized to process.
-- Treat uploaded logs and PCAP files as sensitive operational data.
-- Keep real credentials and environment-specific host details out of the repository.
-- The bundled asset inventory and incident examples are synthetic and use documentation-safe identifiers.
+- `soc_server.py` — Flask API, parsers, enrichment, detections, and dashboard routes
+- `soc_index.html` — browser dashboard
+- `splunk_stream.py` — optional Splunk integration
+- `syslog_listener.py`, `netflow_listener.py` — local event and flow listeners
+- `storage.py` — SQLite event, audit, and investigation storage
+- `mitre_search.py`, `mitre_graph.py`, `build_mitre_rag.py` — ATT&CK retrieval and graph tools
+- `cve_store.py`, `incident_memory.py`, `phase2_cli.py` — CVE search, incident memory, and CLI
+- `assets.json`, `threat_feeds.json`, `sample_incident.json` — synthetic demo data
+
+## Responsible use
+
+This is a demonstration and research tool. Detection results need analyst review and are not a substitute for a production SOC or other security controls. Use only systems, logs, packet captures, and threat feeds that you are authorized to process. The included asset and incident data are synthetic; local databases, indexes, credentials, and archives are excluded from version control.
