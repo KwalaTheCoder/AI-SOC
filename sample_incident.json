@@ -1,0 +1,14 @@
+{
+  "id": "DEMO-INC-001",
+  "title": "Repeated SSH login failures",
+  "description": "Synthetic demonstration incident using documentation-only network addresses.",
+  "evidence": [
+    "Multiple failed SSH logins from 203.0.113.9",
+    "No successful login observed in the sample window"
+  ],
+  "mitre_ids": ["T1110"],
+  "priority": "medium",
+  "status": "open",
+  "created_at": "2026-01-01T00:00:00Z",
+  "resolution": ""
+}

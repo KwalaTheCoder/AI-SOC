@@ -1,0 +1,15 @@
+{
+  "_comment": "Synthetic demo inventory. Replace with assets you are authorized to monitor.",
+  "_criticality": "low < medium < high < critical",
+  "assets": [
+    {
+      "ip": "192.0.2.10",
+      "hostname": "demo-web-01.example.test",
+      "role": "web-server",
+      "criticality": "high",
+      "owner": "Example Team",
+      "products": ["nginx"],
+      "cpe": []
+    }
+  ]
+}

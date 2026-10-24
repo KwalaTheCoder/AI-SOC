@@ -1,0 +1,7 @@
+flask
+flask-cors
+requests
+chromadb
+splunk-sdk
+python-dotenv
+networkx>=3.2,<4

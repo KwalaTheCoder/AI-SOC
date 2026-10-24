@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SOC Intelligence Platform — Live</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: Tahoma, 'Segoe UI', sans-serif; background: #0a0e1a; color: #e0e6f0; min-height: 100vh; direction: rtl; }
+
+/* topbar */
+.topbar { background: #0f1629; border-bottom: 1px solid #1e2d4a; padding: 14px 2rem; display: flex; align-items: center; gap: 12px; }
+.topbar-logo { font-size: 20px; }
+.topbar h1 { font-size: 16px; font-weight: 600; color: #fff; }
+.topbar-status { margin-right: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: #374151; }
+.dot.green { background: #22c55e; box-shadow: 0 0 6px #22c55e; animation: pulse 2s infinite; }
+.dot.red { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+.section-title { font-size: 14px; color: #9ca3af; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 1rem; display:flex; align-items:center; gap:8px; }
+
+/* live source cards */
+.sources { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 2rem; }
+.source-card { background: #0f1629; border: 1px solid #1e2d4a; border-radius: 12px; padding: 1.2rem; }
+.source-head { display:flex; align-items:center; gap:8px; margin-bottom: 12px; }
+.source-icon { font-size: 20px; }
+.source-name { font-size: 14px; font-weight: 600; color: #fff; }
+.source-state { margin-right:auto; font-size:11px; padding:3px 10px; border-radius:20px; }
+.source-state.on  { background:#001a0d; color:#34d399; border:1px solid #065f46; }
+.source-state.off { background:#3b0000; color:#f87171; border:1px solid #7f1d1d; }
+.source-metric { display:flex; justify-content:space-between; font-size:12px; margin-bottom:6px; color:#9ca3af; }
+.source-metric span:last-child { color:#e0e6f0; font-weight:600; font-family: monospace; }
+
+/* stats */
+.stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 2rem; }
+.stat { background: #0f1629; border: 1px solid #1e2d4a; border-radius: 10px; padding: 14px; text-align: center; }
+.stat-num { font-size: 28px; font-weight: 600; transition: color .3s; }
+.stat-label { font-size: 11px; color: #6b7280; margin-top: 4px; }
+.stat.total .stat-num { color: #60a5fa; }
+.stat.critical .stat-num { color: #f87171; }
+.stat.warning .stat-num { color: #fbbf24; }
+.stat.info .stat-num { color: #34d399; }
+.stat.threat .stat-num { color: #c084fc; }
+
+/* controls */
+.controls { display:flex; gap:10px; align-items:center; margin-bottom:1.5rem; flex-wrap:wrap; }
+.btn { background: #3b82f6; color: #fff; border: none; border-radius: 8px; padding: 10px 22px; font-size: 13px; font-family: Tahoma,sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background .2s; }
+.btn:hover { background: #2563eb; }
+.btn:disabled { background: #1e3a5f; color: #4b6080; cursor: not-allowed; }
+.btn.ghost { background:transparent; border:1px solid #1e2d4a; color:#9ca3af; }
+.btn.ghost:hover { border-color:#3b82f6; color:#60a5fa; }
+.auto-toggle { font-size:12px; color:#6b7280; display:flex; align-items:center; gap:6px; margin-right:auto; }
+
+/* live events table */
+.table-wrap { background:#0f1629; border:1px solid #1e2d4a; border-radius:12px; overflow-x:auto; margin-bottom:2rem; }
+table { width:100%; border-collapse:collapse; font-size:12px; }
+th { text-align:right; padding:10px 12px; color:#6b7280; font-weight:500; border-bottom:1px solid #1e2d4a; white-space:nowrap; text-transform:uppercase; font-size:10px; letter-spacing:.04em; }
+td { padding:9px 12px; border-bottom:1px solid #131f38; color:#cbd5e1; white-space:nowrap; }
+tr:last-child td { border-bottom:none; }
+tr:hover td { background:#111e35; }
+.mono { font-family:monospace; }
+.sev-badge { font-size:10px; font-weight:600; padding:2px 8px; border-radius:12px; }
+.sev-badge.CRITICAL { background:#3b0000; color:#f87171; }
+.sev-badge.WARNING { background:#2d1a00; color:#fbbf24; }
+.sev-badge.INFO { background:#001a0d; color:#34d399; }
+.threat-chip { background:#2a0a3d; color:#c084fc; font-size:10px; padding:2px 7px; border-radius:10px; }
+
+/* alerts (AI) */
+.alert-card { background: #0f1629; border: 1px solid #1e2d4a; border-radius: 12px; margin-bottom: 1.2rem; overflow: hidden; }
+.alert-header { padding: 1rem 1.2rem; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #1e2d4a; cursor: pointer; user-select: none; }
+.priority-badge { font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 20px; white-space: nowrap; }
+.priority-badge.red    { background: #3b0000; color: #f87171; border: 1px solid #7f1d1d; }
+.priority-badge.orange { background: #2d1a00; color: #fbbf24; border: 1px solid #78350f; }
+.priority-badge.yellow { background: #2d2500; color: #fde68a; border: 1px solid #713f12; }
+.priority-badge.blue   { background: #001a2d; color: #60a5fa; border: 1px solid #1e3a5f; }
+.alert-ip { font-size: 15px; font-weight: 600; color: #fff; font-family: monospace; }
+.score-bar-wrap { margin-right: auto; display: flex; align-items: center; gap: 8px; }
+.score-num { font-size: 13px; font-weight: 600; color: #e0e6f0; white-space: nowrap; }
+.score-bar { width: 80px; height: 6px; background: #1e2d4a; border-radius: 3px; overflow: hidden; }
+.score-fill { height: 100%; border-radius: 3px; transition: width .8s; }
+.score-fill.red { background: linear-gradient(90deg,#dc2626,#f87171); }
+.score-fill.orange { background: linear-gradient(90deg,#d97706,#fbbf24); }
+.score-fill.yellow { background: linear-gradient(90deg,#ca8a04,#fde68a); }
+.score-fill.blue { background: linear-gradient(90deg,#1d4ed8,#60a5fa); }
+.chevron { font-size: 12px; color: #6b7280; transition: transform .2s; }
+.chevron.open { transform: rotate(180deg); }
+.alert-body { padding: 1.2rem; display: none; }
+.alert-body.show { display: block; }
+.analysis-box { background: #0a0e1a; border: 1px solid #1e3a5f; border-radius: 8px; padding: 1rem 1.2rem; }
+.analysis-box h4 { font-size: 11px; color: #60a5fa; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
+.analysis-text { font-size: 13px; line-height: 1.8; color: #d1fae5; white-space: pre-wrap; }
+.triage-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px; }
+.triage-badge { padding:4px 14px; border-radius:20px; font-size:13px; font-weight:700; }
+.triage-badge.red { background:#7f1d1d; color:#fca5a5; }
+.triage-badge.orange { background:#7c2d12; color:#fdba74; }
+.triage-badge.yellow { background:#713f12; color:#fde68a; }
+.triage-badge.blue { background:#1e3a5f; color:#93c5fd; }
+.triage-conf { font-size:12px; color:#94a3b8; }
+.triage-reason { font-size:12px; color:#cbd5e1; font-style:italic; }
+
+/* فاز ۳ — Feedback */
+.feedback-row { display:flex; gap:8px; align-items:center; margin-top:10px; flex-wrap:wrap; }
+.fb-btn { padding:5px 14px; border-radius:20px; border:none; font-size:12px; font-weight:600; cursor:pointer; transition:opacity .2s; }
+.fb-btn.confirm { background:#14532d; color:#86efac; }
+.fb-btn.reject  { background:#7f1d1d; color:#fca5a5; }
+.fb-btn.edit    { background:#1e3a5f; color:#93c5fd; }
+.fb-btn:hover   { opacity:.8; }
+.fb-status { font-size:11px; color:#64748b; }
+.incident-id { font-size:10px; color:#475569; font-family:monospace; margin-top:4px; }
+.cache-badge { font-size:10px; background:#1e3a5f; color:#60a5fa; padding:2px 8px; border-radius:10px; }
+
+/* فاز ۳ — Q&A */
+.qa-section { background:#070c1a; border:1px solid #1e2d4a; border-radius:10px; padding:1rem; margin-top:1rem; }
+.qa-section h3 { font-size:13px; color:#60a5fa; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+.qa-input-row { display:flex; gap:8px; align-items:flex-end; }
+.qa-input-row textarea { flex:1; background:#0f1629; border:1px solid #1e3a5f; border-radius:8px; color:#e2e8f0; font-size:13px; padding:8px 12px; resize:none; min-height:60px; font-family:inherit; direction:rtl; }
+.qa-input-row textarea:focus { outline:none; border-color:#3b82f6; }
+.qa-send-btn { padding:10px 18px; background:#1d4ed8; border:none; border-radius:8px; color:#fff; font-size:13px; cursor:pointer; white-space:nowrap; }
+.qa-send-btn:hover { background:#2563eb; }
+.qa-send-btn:disabled { opacity:.5; cursor:not-allowed; }
+.qa-history { margin-top:12px; display:flex; flex-direction:column; gap:8px; max-height:320px; overflow-y:auto; }
+.qa-msg { padding:8px 14px; border-radius:8px; font-size:13px; line-height:1.6; }
+.qa-msg.user { background:#1e2d4a; color:#e2e8f0; text-align:right; margin-left:20%; }
+.qa-msg.ai   { background:#0a0e1a; border:1px solid #1e3a5f; color:#cbd5e1; margin-right:20%; }
+.qa-ip-tag { font-size:11px; color:#60a5fa; margin-bottom:6px; }
+
+/* فاز ۳ — Audit Log */
+.audit-section { margin-top:1.5rem; }
+.audit-filters { display:flex; gap:8px; margin-bottom:10px; flex-wrap:wrap; align-items:center; }
+.audit-filters select, .audit-filters input { background:#0f1629; border:1px solid #1e3a5f; color:#e2e8f0; border-radius:6px; padding:5px 10px; font-size:12px; }
+.audit-table td { font-size:11px; }
+.actor-ai { color:#818cf8; }
+.actor-analyst { color:#34d399; }
+.alert-stats { display:flex; gap:12px; flex-wrap:wrap; margin:8px 0; font-size:12px; color:#94a3b8; }
+
+.empty { text-align:center; padding:2.5rem; color:#374151; font-size:13px; }
+.spinner { width:34px; height:34px; border:3px solid #1e2d4a; border-top-color:#3b82f6; border-radius:50%; animation:spin .8s linear infinite; margin:0 auto 12px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.updated { font-size:11px; color:#4b6080; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="topbar-logo">🛡️</span>
+  <h1>SOC Intelligence Platform</h1>
+  <div class="topbar-status">
+    <span class="dot" id="ollamaDot"></span>
+    <span id="ollamaTxt">در حال بررسی Ollama…</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- منابع دریافت زنده -->
+  <div class="section-title">📡 منابع دریافت زنده</div>
+  <div class="sources">
+    <div class="source-card">
+      <div class="source-head">
+        <span class="source-icon">📥</span>
+        <span class="source-name">Syslog Listener</span>
+        <span class="source-state off" id="sysState">قطع</span>
+      </div>
+      <div class="source-metric"><span>پورت UDP/TCP</span><span id="sysPort">—</span></div>
+      <div class="source-metric"><span>دریافت‌شده</span><span id="sysRecv">0</span></div>
+      <div class="source-metric"><span>ذخیره‌شده</span><span id="sysStored">0</span></div>
+      <div class="source-metric"><span>صف</span><span id="sysQueue">0</span></div>
+    </div>
+    <div class="source-card">
+      <div class="source-head">
+        <span class="source-icon">🌊</span>
+        <span class="source-name">NetFlow Collector</span>
+        <span class="source-state off" id="nfState">قطع</span>
+      </div>
+      <div class="source-metric"><span>پورت UDP</span><span id="nfPort">—</span></div>
+      <div class="source-metric"><span>بسته‌ها</span><span id="nfPkts">0</span></div>
+      <div class="source-metric"><span>flow decode</span><span id="nfFlows">0</span></div>
+      <div class="source-metric"><span>نسخه‌های پشتیبانی‌نشده</span><span id="nfUnsup">—</span></div>
+    </div>
+    <div class="source-card">
+      <div class="source-head">
+        <span class="source-icon">🗄️</span>
+        <span class="source-name">Storage (SQLite)</span>
+        <span class="source-state off" id="stState">قطع</span>
+      </div>
+      <div class="source-metric"><span>کل رویدادها</span><span id="stTotal">0</span></div>
+      <div class="source-metric"><span>IP یکتا</span><span id="stUniq">0</span></div>
+      <div class="source-metric"><span>برخورد فید تهدید</span><span id="stThreat">0</span></div>
+      <div class="source-metric"><span>آخرین رویداد</span><span id="stLast">—</span></div>
+    </div>
+  </div>
+
+  <!-- آمار -->
+  <div class="section-title">📊 آمار رویدادها</div>
+  <div class="stats">
+    <div class="stat total"><div class="stat-num" id="kTotal">0</div><div class="stat-label">کل رویدادها</div></div>
+    <div class="stat critical"><div class="stat-num" id="kCrit">0</div><div class="stat-label">بحرانی</div></div>
+    <div class="stat warning"><div class="stat-num" id="kWarn">0</div><div class="stat-label">هشدار</div></div>
+    <div class="stat info"><div class="stat-num" id="kInfo">0</div><div class="stat-label">اطلاعاتی</div></div>
+    <div class="stat threat"><div class="stat-num" id="kThreat">0</div><div class="stat-label">تهدید شناخته‌شده</div></div>
+  </div>
+
+  <!-- کنترل‌ها -->
+  <div class="controls">
+    <button class="btn" id="btnAnalyze" onclick="runAnalysis()">🔍 تحلیل با هوش مصنوعی</button>
+    <button class="btn ghost" onclick="refreshAll()">↻ به‌روزرسانی</button>
+    <label class="auto-toggle"><input type="checkbox" id="autoChk" checked onchange="toggleAuto()"> به‌روزرسانی خودکار (۵s)</label>
+    <span class="updated" id="updated"></span>
+  </div>
+
+  <!-- رویدادهای زنده -->
+  <div class="section-title">🟢 رویدادهای اخیر (از پایگاه داده)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>زمان</th><th>شدت</th><th>مبدأ ← مقصد</th><th>پروتکل/عملیات</th>
+        <th>امضا</th><th>دارایی</th><th>تهدید</th>
+      </tr></thead>
+      <tbody id="eventsBody">
+        <tr><td colspan="7" class="empty">در انتظار داده…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-title">🚨 رخدادهای امنیتی (Incidents)</div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>شناسه</th><th>وضعیت</th><th>اولویت</th><th>امتیاز</th>
+        <th>نوع</th><th>IP مبدأ</th><th>تعداد شواهد</th><th>آخرین مشاهده</th><th>عملیات</th>
+      </tr></thead>
+      <tbody id="incidentsBody">
+        <tr><td colspan="9" class="empty">هنوز Incident ساخته نشده است.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- تحلیل AI -->
+  <div class="section-title">🤖 تحلیل هوش مصنوعی (Ollama · Mistral)</div>
+  <div id="alertsBox"><div class="empty">برای تحلیل تهدیدهای فعلی، «تحلیل با هوش مصنوعی» را بزنید.</div></div>
+
+  <!-- Q&A -->
+  <div class="section-title">💬 پرسش و پاسخ با هوش مصنوعی</div>
+  <div class="qa-section">
+    <div class="qa-ip-tag" id="qaIpTag"></div>
+    <div class="qa-history" id="qaHistory"></div>
+    <div class="qa-input-row" style="margin-top:10px">
+      <textarea id="qaInput" placeholder="سوال خود را بنویسید… (مثال: این IP چه حمله‌ای انجام داده؟)" rows="2"></textarea>
+      <button class="qa-send-btn" id="qaSendBtn" onclick="sendQA()">ارسال ↵</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+      <label style="font-size:11px;color:#64748b">IP مرتبط (اختیاری):</label>
+      <input id="qaIpInput" type="text" placeholder="مثال: 185.220.101.45"
+             style="background:#0f1629;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:6px;padding:4px 10px;font-size:12px;width:180px">
+      <button onclick="clearQA()" style="font-size:11px;color:#64748b;background:none;border:none;cursor:pointer">🗑 پاک کردن</button>
+    </div>
+  </div>
+
+  <!-- Audit Log -->
+  <div class="section-title audit-section">📋 Audit Log — تمام تصمیمات AI و مداخلات تحلیلگر</div>
+  <div class="audit-filters">
+    <select id="auditTypeFilter" onchange="loadAuditLog()">
+      <option value="">همه انواع</option>
+      <option value="ai_analysis">تحلیل AI</option>
+      <option value="triage">Triage</option>
+      <option value="playbook">Playbook</option>
+      <option value="feedback">بازخورد</option>
+      <option value="qa">Q&A</option>
+    </select>
+    <input id="auditIpFilter" type="text" placeholder="فیلتر IP…" style="width:160px"
+           onkeyup="if(event.key==='Enter') loadAuditLog()">
+    <button class="btn ghost" style="font-size:12px;padding:5px 12px" onclick="loadAuditLog()">اعمال فیلتر</button>
+    <span id="auditCount" style="font-size:11px;color:#64748b"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>زمان</th><th>نوع</th><th>Actor</th><th>IP</th>
+        <th>Triage</th><th>امتیاز</th><th>جزئیات</th>
+      </tr></thead>
+      <tbody id="auditBody">
+        <tr><td colspan="7" class="empty">در انتظار بارگذاری…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+// ── endpoints فاز ۱ ──
+const API = {
+  ollama:  '/check-ollama',
+  syslog:  '/syslog-status',
+  netflow: '/netflow-status',
+  storage: '/storage-stats',
+  recent:  '/recent-events?limit=50',
+  analyze: '/analyze-live',
+  incidents: '/incidents?limit=50',
+};
+
+let autoTimer = null;
+
+const API_TOKEN = localStorage.getItem('soc_api_token') || '';
+const authHeaders = () => API_TOKEN ? {'Authorization': `Bearer ${API_TOKEN}`} : {};
+const esc = value => String(value ?? '').replace(/[&<>'"]/g, ch => ({
+  '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
+}[ch]));
+async function getJSON(url){
+  try{
+    const r=await fetch(url, {headers: authHeaders()});
+    if(!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  }catch(e){ return null; }
+}
+
+function setState(el, on, onText='فعال', offText='قطع'){
+  el.textContent = on ? onText : offText;
+  el.className = 'source-state ' + (on ? 'on' : 'off');
+}
+
+async function refreshStatus(){
+  const [sys, nf, st] = await Promise.all([getJSON(API.syslog), getJSON(API.netflow), getJSON(API.storage)]);
+  // Syslog
+  if(sys){
+    setState(document.getElementById('sysState'), sys.udp_running || sys.tcp_running);
+    document.getElementById('sysPort').textContent = (sys.port ?? '5514');
+    // total_events_db از SQLite میاد — با restart reset نمیشه
+    // total_received از memory میاد — با restart صفر میشه (در پرانتز نمایش داده میشه)
+    const dbCount = sys.total_events_db ?? null;
+    const memCount = sys.total_received ?? 0;
+    document.getElementById('sysRecv').textContent = dbCount !== null
+      ? `${dbCount} (این session: ${memCount})`
+      : memCount;
+    document.getElementById('sysStored').textContent = sys.total_stored ?? 0;
+    document.getElementById('sysQueue').textContent = sys.queue_size ?? 0;
+  }
+  // NetFlow
+  if(nf){
+    setState(document.getElementById('nfState'), nf.running);
+    document.getElementById('nfPort').textContent = nf.port ?? 2055;
+    document.getElementById('nfPkts').textContent = nf.packets_received ?? 0;
+    document.getElementById('nfFlows').textContent = nf.flows_decoded ?? 0;
+    const u = nf.unsupported_versions || {};
+    const keys = Object.keys(u);
+    document.getElementById('nfUnsup').textContent = keys.length ? keys.map(k=>`${k}:${u[k]}`).join(' ') : '—';
+  }
+  // Storage
+  if(st){
+    setState(document.getElementById('stState'), (st.total_events ?? 0) >= 0, 'فعال', 'فعال');
+    document.getElementById('stTotal').textContent = st.total_events ?? 0;
+    document.getElementById('stUniq').textContent = st.unique_source_ips ?? 0;
+    document.getElementById('stThreat').textContent = st.threat_feed_hits ?? 0;
+    const last = st.time_range && st.time_range.last ? st.time_range.last.replace('T',' ').slice(0,19) : '—';
+    document.getElementById('stLast').textContent = last;
+    if(document.getElementById('sysRecv') && !sys){
+      document.getElementById('sysRecv').textContent = st.total_events ?? 0;
+    }
+    // آمار بالا
+    const sev = st.by_severity || {};
+    document.getElementById('kTotal').textContent  = st.total_events ?? 0;
+    document.getElementById('kCrit').textContent   = sev.CRITICAL ?? 0;
+    document.getElementById('kWarn').textContent   = sev.WARNING ?? 0;
+    document.getElementById('kInfo').textContent   = sev.INFO ?? 0;
+    document.getElementById('kThreat').textContent = st.threat_feed_hits ?? 0;
+  }
+}
+
+async function refreshEvents(){
+  const data = await getJSON(API.recent);
+  const body = document.getElementById('eventsBody');
+  const rows = (data && (data.events || data)) || [];
+  if(!rows.length){ body.innerHTML = '<tr><td colspan="7" class="empty">هنوز رویدادی ذخیره نشده — منتظر داده زنده…</td></tr>'; return; }
+  body.innerHTML = rows.map(e => {
+    const t = esc((e.timestamp||'').replace('T',' ').slice(0,19) || '—');
+    const sev = esc(e.severity || 'INFO');
+    const src = esc(e.src_ip || '—');
+    const dst = esc(e.dest_ip ? (e.dest_ip + (e.dest_port? ':'+e.dest_port : '')) : '—');
+    const proto = esc(e.proto || e.action || '—');
+    const sig = esc((e.signature || '').slice(0,48) || '—');
+    const asset = esc(e.asset_hostname ? `${e.asset_hostname}${e.asset_criticality? ' ('+e.asset_criticality+')':''}` : '—');
+    const threat = e.threat_label ? `<span class="threat-chip">${esc(e.threat_label)}</span>` : '—';
+    return `<tr>
+      <td class="mono">${t}</td>
+      <td><span class="sev-badge ${sev}">${sev}</span></td>
+      <td class="mono">${src} ← ${dst}</td>
+      <td>${proto}</td>
+      <td>${sig}</td>
+      <td>${asset}</td>
+      <td>${threat}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function refreshAll(){
+  await Promise.all([refreshStatus(), refreshEvents(), refreshIncidents()]);
+  document.getElementById('updated').textContent = 'آخرین به‌روزرسانی: ' + new Date().toLocaleTimeString('fa-IR');
+}
+
+async function refreshIncidents(){
+  const data = await getJSON(API.incidents);
+  const body = document.getElementById('incidentsBody');
+  const rows = (data && data.incidents) || [];
+  if(!rows.length){
+    body.innerHTML = '<tr><td colspan="9" class="empty">هنوز Incident ساخته نشده است.</td></tr>';
+    return;
+  }
+  body.innerHTML = rows.map(i => `<tr>
+    <td class="mono">#${Number(i.id)}</td>
+    <td>${esc(i.status)}</td>
+    <td>${esc(i.priority)}</td>
+    <td>${Number(i.risk_score)}/100</td>
+    <td>${esc(i.incident_type)}</td>
+    <td class="mono">${esc(i.source_ip)}</td>
+    <td>${Number(i.event_count)}</td>
+    <td class="mono">${esc((i.last_seen || '').replace('T',' ').slice(0,19) || '—')}</td>
+    <td>
+      <select onchange="setIncidentStatus(${Number(i.id)}, this.value)">
+        ${['new','investigating','resolved','false_positive'].map(s =>
+          `<option value="${s}" ${i.status===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+    </td>
+  </tr>`).join('');
+}
+
+async function setIncidentStatus(id, status){
+  await fetch(`/incidents/${id}/status`, {
+    method:'PATCH',
+    headers:{...authHeaders(), 'Content-Type':'application/json'},
+    body:JSON.stringify({status, actor:'dashboard-analyst'})
+  });
+  await refreshIncidents();
+}
+
+async function checkOllama(){
+  const d = await getJSON(API.ollama);
+  const dot = document.getElementById('ollamaDot'), txt = document.getElementById('ollamaTxt');
+  const ok = d && (d.ok || d.available || d.status === 'ok' || d.ollama);
+  dot.className = 'dot ' + (ok ? 'green' : 'red');
+  txt.textContent = ok ? 'Ollama متصل' : 'Ollama در دسترس نیست';
+}
+
+const PRIO = { 'بحرانی':['red',100], 'CRITICAL':['red',100], 'بالا':['orange',75], 'HIGH':['orange',75], 'متوسط':['yellow',50], 'MEDIUM':['yellow',50], 'پایین':['blue',25], 'LOW':['blue',25] };
+
+async function runAnalysis(){
+  const btn = document.getElementById('btnAnalyze');
+  const box = document.getElementById('alertsBox');
+  btn.disabled = true; btn.textContent = '⏳ در حال تحلیل…';
+  box.innerHTML = '<div class="empty"><div class="spinner"></div>در حال تحلیل رویدادهای زنده با هوش مصنوعی…</div>';
+  const data = await fetch(API.analyze, {method:'POST', headers:authHeaders()}).then(r=>r.json()).catch(()=>null);
+  btn.disabled = false; btn.textContent = '🔍 تحلیل با هوش مصنوعی';
+  const alerts = (data && data.alerts) || [];
+  if(!alerts.length){ box.innerHTML = '<div class="empty">✅ هیچ تهدید مشکوکی در داده فعلی شناسایی نشد.</div>'; return; }
+  box.innerHTML = alerts.map((a,i) => {
+    const grp = a.group || a;
+    const sc = Math.max(0, Math.min(Number(grp.score) || 0, 100));
+    const triage = a.triage || {};
+    const priority = triage.level || grp.priority || '';
+    let cls = 'blue';
+    if(priority==='بحرانی'||sc>=80) cls='red';
+    else if(priority==='بالا'||sc>=60) cls='orange';
+    else if(priority==='متوسط'||sc>=40) cls='yellow';
+    const ip   = esc(grp.ip || '—');
+    const type = esc(grp.type || 'THREAT');
+
+    // Triage badge + reason
+    const triageHtml = triage.level ? `
+      <div class="triage-row">
+        <span class="triage-badge ${cls}">🎯 ${esc(triage.level)}</span>
+        ${triage.confidence ? `<span class="triage-conf">اطمینان: ${esc(String(triage.confidence))}٪</span>` : ''}
+        ${triage.reason ? `<span class="triage-reason">${esc(triage.reason)}</span>` : ''}
+      </div>` : '';
+
+    // Stats bar
+    const st = grp.stats || {};
+    const statsItems = [
+      st.login_failures ? `🔑 ورود ناموفق: ${st.login_failures}` : '',
+      st.c2            ? `📡 C2: ${st.c2}` : '',
+      st.lateral       ? `↔️ Lateral: ${st.lateral}` : '',
+      st.exfil         ? `📤 خروج داده: ${st.exfil}` : '',
+      st.commands      ? `💻 اجرای دستور: ${st.commands}` : '',
+      grp.port_count   ? `🔍 پورت‌های اسکن: ${grp.port_count}` : '',
+      grp.threat_label ? `<span style="color:#f87171">⚠️ ${esc(grp.threat_label)}</span>` : '',
+    ].filter(Boolean);
+    const statsHtml = statsItems.length
+      ? `<div class="alert-stats">${statsItems.join('<span style="color:#334155">|</span>')}</div>` : '';
+
+    // Narrative / analysis
+    const narrative = esc(a.narrative || a.analysis || '—');
+    const narrativeHtml = `
+      <div class="analysis-box">
+        <h4>🧠 تحلیل هوش مصنوعی</h4>
+        <div class="analysis-text">${narrative}</div>
+      </div>`;
+
+    // MITRE
+    const mitreId = triage.mitre_id || '';
+    const mitreHtml = mitreId && mitreId !== 'N/A' ? `
+      <div class="analysis-box" style="margin-top:8px">
+        <h4>🛡️ نگاشت MITRE ATT&CK</h4>
+        <div class="analysis-text">${esc(mitreId)}${triage.mitre_reason ? ' — ' + esc(triage.mitre_reason) : ''}</div>
+      </div>` : '';
+
+    // Playbook
+    const playbook = a.playbook || [];
+    const playbookHtml = playbook.length ? `
+      <div class="analysis-box" style="margin-top:8px">
+        <h4>📋 Playbook پیشنهادی</h4>
+        <ol style="margin:0;padding-right:18px;color:#d1fae5;font-size:13px;line-height:2">
+          ${playbook.map(s => `<li>${esc(s)}</li>`).join('')}
+        </ol>
+      </div>` : '';
+
+    // ── فاز ۴ ──
+    const p4 = a.phase4 || {};
+    const p4Html = (p4.cluster_label || p4.anomaly_score != null || p4.corr_chain_count) ? `
+      <div class="analysis-box" style="margin-top:8px">
+        <h4>🔬 تحلیل رفتاری (فاز ۴)</h4>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#cbd5e1">
+          ${p4.cluster_label ? `<span>🏷️ دسته‌بندی: <b style="color:#93c5fd">${esc(p4.cluster_label)}</b></span>` : ''}
+          ${p4.anomaly_score != null ? `<span>⚠️ امتیاز ناهنجاری: <b style="color:${p4.is_anomaly?'#f87171':'#86efac'}">${p4.anomaly_score}/100${p4.is_anomaly?' 🔴':''}</b></span>` : ''}
+          ${p4.corr_chain_count ? `<span>🔗 زنجیره حمله: <b style="color:#fbbf24">${p4.corr_chain_count} مرحله</b></span>` : ''}
+          ${p4.asset_score_boost ? `<span>🎯 افزایش امتیاز دارایی: <b style="color:#f87171">+${p4.asset_score_boost}</b></span>` : ''}
+          ${p4.target_asset_hostname ? `<span>🖥️ هدف: <b style="color:#c084fc">${esc(p4.target_asset_hostname)} (${esc(p4.target_asset_criticality)})</b></span>` : ''}
+        </div>
+      </div>` : '';
+
+    const incId  = a.incident_id || '';
+    const cached = a.from_cache ? '<span class="cache-badge">از cache</span>' : '';
+    const incIdHtml = incId
+      ? `<div class="incident-id">🔖 Incident: ${esc(incId)} ${cached}</div>`
+      : '';
+
+    const feedbackHtml = incId ? `
+      <div class="feedback-row">
+        <span style="font-size:12px;color:#64748b">بازخورد:</span>
+        <button class="fb-btn confirm" onclick="sendFeedback('${esc(incId)}','confirmed',${i})">✅ تأیید</button>
+        <button class="fb-btn reject"  onclick="sendFeedback('${esc(incId)}','rejected',${i})">❌ رد</button>
+        <button class="fb-btn edit"    onclick="toggleFbEdit(${i})">✏️ اصلاح Triage</button>
+        <button class="fb-btn edit"    onclick="askQAForIP('${esc(a.ip||'')}')">💬 پرسش</button>
+        <span class="fb-status" id="fb-status-${i}"></span>
+      </div>
+      <div id="fb-edit-${i}" style="display:none;margin-top:8px;gap:6px;flex-wrap:wrap" class="feedback-row">
+        <select id="fb-triage-${i}"
+          style="background:#0f1629;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:6px;padding:5px 10px;font-size:12px">
+          <option value="">اصلاح اولویت…</option>
+          <option value="بحرانی">بحرانی</option>
+          <option value="بالا">بالا</option>
+          <option value="متوسط">متوسط</option>
+          <option value="پایین">پایین</option>
+        </select>
+        <input id="fb-note-${i}" type="text" placeholder="توضیح (اختیاری)"
+          style="background:#0f1629;border:1px solid #1e3a5f;color:#e2e8f0;border-radius:6px;padding:5px 10px;font-size:12px;width:200px">
+        <button class="fb-btn edit" onclick="sendFeedbackEdit('${esc(incId)}',${i})">ذخیره</button>
+      </div>` : '';
+
+    return `<div class="alert-card">
+      <div class="alert-header" onclick="toggleAlert(${i})">
+        <span class="priority-badge ${cls}">${type}</span>
+        <span class="alert-ip">${ip}</span>
+        <div class="score-bar-wrap">
+          <span class="score-num">${sc}/100</span>
+          <div class="score-bar"><div class="score-fill ${cls}" style="width:${sc}%"></div></div>
+          <span class="chevron" id="chev-${i}">▼</span>
+        </div>
+      </div>
+      <div class="alert-body" id="body-${i}">
+        ${incIdHtml}
+        ${triageHtml}${statsHtml}${narrativeHtml}${mitreHtml}${playbookHtml}${p4Html}
+        ${feedbackHtml}
+      </div>
+    </div>`;
+  }).join('');
+  await refreshIncidents();
+}
+
+function toggleAlert(i){
+  document.getElementById(`body-${i}`).classList.toggle('show');
+  document.getElementById(`chev-${i}`).classList.toggle('open');
+}
+
+function toggleAuto(){
+  if(document.getElementById('autoChk').checked){ autoTimer = setInterval(refreshAll, 5000); }
+  else { clearInterval(autoTimer); autoTimer = null; }
+}
+
+// ── Q&A ─────────────────────────────────────────────────────
+let _qaSessionId = 'ses-' + Math.random().toString(36).slice(2,10);
+let _qaIp = '';
+
+function askQAForIP(ip){
+  _qaIp = ip;
+  document.getElementById('qaIpTag').textContent = ip ? `💬 پرسش درباره IP: ${ip}` : '';
+  document.getElementById('qaIpInput').value = ip;
+  document.getElementById('qaInput').focus();
+  document.getElementById('qaHistory').innerHTML = '';
+  _qaSessionId = 'ses-' + Math.random().toString(36).slice(2,10);
+  document.querySelector('.qa-section').scrollIntoView({behavior:'smooth'});
+}
+
+function _appendQAMsg(role, text){
+  const div = document.createElement('div');
+  div.className = `qa-msg ${role}`;
+  div.textContent = text;
+  const h = document.getElementById('qaHistory');
+  h.appendChild(div);
+  h.scrollTop = h.scrollHeight;
+}
+
+async function sendQA(){
+  const question = document.getElementById('qaInput').value.trim();
+  const ipVal    = document.getElementById('qaIpInput').value.trim() || _qaIp;
+  if(!question) return;
+  const btn = document.getElementById('qaSendBtn');
+  btn.disabled = true;
+  _appendQAMsg('user', question);
+  document.getElementById('qaInput').value = '';
+  _appendQAMsg('ai', '⏳ در حال تفکر…');
+  try {
+    const res = await fetch('/qa', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        question,
+        ip_context:  ipVal,
+        session_id:  _qaSessionId,
+      })
+    });
+    const data = await res.json();
+    const msgs = document.getElementById('qaHistory').querySelectorAll('.qa-msg.ai');
+    msgs[msgs.length-1].textContent = data.answer || data.error || 'خطا در دریافت پاسخ';
+  } catch(e){
+    const msgs = document.getElementById('qaHistory').querySelectorAll('.qa-msg.ai');
+    msgs[msgs.length-1].textContent = 'خطا در اتصال به سرور';
+  }
+  btn.disabled = false;
+}
+
+// Enter ارسال کنه (Shift+Enter = خط جدید)
+document.getElementById('qaInput').addEventListener('keydown', e=>{
+  if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendQA(); }
+});
+
+// ── Feedback ─────────────────────────────────────────────────
+async function sendFeedback(incId, status, idx){
+  const statusEl = document.getElementById(`fb-status-${idx}`);
+  if(statusEl) statusEl.textContent = '⏳';
+  try {
+    const res = await fetch(`/incident/${encodeURIComponent(incId)}/feedback`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({status})
+    });
+    const data = await res.json();
+    if(statusEl) statusEl.textContent = status==='confirmed' ? '✅ تأیید شد' : '❌ رد شد';
+  } catch(e){
+    if(statusEl) statusEl.textContent = '⚠️ خطا';
+  }
+}
+
+async function sendFeedbackEdit(incId, idx){
+  const triage = document.getElementById(`fb-triage-${idx}`).value;
+  const note   = document.getElementById(`fb-note-${idx}`).value;
+  const statusEl = document.getElementById(`fb-status-${idx}`);
+  if(!triage){ if(statusEl) statusEl.textContent = '⚠️ اولویت انتخاب نشده'; return; }
+  if(statusEl) statusEl.textContent = '⏳';
+  try {
+    const res = await fetch(`/incident/${encodeURIComponent(incId)}/feedback`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({status:'edited', corrected_triage: triage, note})
+    });
+    if(statusEl) statusEl.textContent = `✏️ اصلاح شد: ${triage}`;
+    document.getElementById(`fb-edit-${idx}`).style.display = 'none';
+  } catch(e){
+    if(statusEl) statusEl.textContent = '⚠️ خطا';
+  }
+}
+
+function toggleFbEdit(idx){
+  const el = document.getElementById(`fb-edit-${idx}`);
+  el.style.display = el.style.display==='none' ? 'flex' : 'none';
+}
+
+// ── Audit Log ────────────────────────────────────────────────
+async function loadAuditLog(){
+  const type  = document.getElementById('auditTypeFilter').value;
+  const ip    = document.getElementById('auditIpFilter').value.trim();
+  const tbody = document.getElementById('auditTableBody');
+  if(!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">⏳ در حال بارگذاری…</td></tr>';
+  try {
+    const params = new URLSearchParams({limit:100});
+    if(type) params.set('event_type', type);
+    if(ip)   params.set('ip', ip);
+    const data = await getJSON('/audit-log?' + params.toString());
+    const logs = data?.logs || data || [];
+    if(!logs.length){
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#64748b">هیچ رکوردی یافت نشد</td></tr>';
+      return;
+    }
+    tbody.innerHTML = logs.map(r => `
+      <tr>
+        <td>${esc((r.logged_at||'').slice(0,19).replace('T',' '))}</td>
+        <td><span class="triage-badge blue" style="font-size:11px">${esc(r.event_type||'')}</span></td>
+        <td style="color:#93c5fd">${esc(r.ip||'—')}</td>
+        <td>${esc(r.incident_id||'—')}</td>
+        <td>${esc(r.actor||'ai')}</td>
+        <td>${r.triage_level ? `<span class="triage-badge ${r.triage_level==='بحرانی'?'red':r.triage_level==='بالا'?'orange':'blue'}">${esc(r.triage_level)}</span>` : '—'}</td>
+      </tr>`).join('');
+  } catch(e){
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#f87171">خطا در بارگذاری</td></tr>';
+  }
+}
+
+// بارگذاری اولیه audit log
+loadAuditLog();
+
+// ── init ──
+checkOllama();
+refreshAll();
+toggleAuto();
+setInterval(checkOllama, 15000);
+</script>
+</body>
+</html>

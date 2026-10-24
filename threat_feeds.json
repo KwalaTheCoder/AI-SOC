@@ -1,0 +1,8 @@
+{
+  "_comment": "Empty demo feed. Populate only from sources you are authorized to use and keep the data current.",
+  "_sources": "No live indicators are included in this repository.",
+  "malicious_ips": [],
+  "tor_exit_nodes": [],
+  "known_scanners": [],
+  "malicious_domains": []
+}
